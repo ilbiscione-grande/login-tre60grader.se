@@ -106,7 +106,7 @@ function HandoffClient({
         return;
       }
 
-      const { data, error } = await supabase.rpc("tre60_auth_context", {});
+      const { data, error } = await supabase.rpc("tre60_auth_context");
 
       if (cancelled) return;
 
