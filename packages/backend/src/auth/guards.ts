@@ -3,8 +3,10 @@ import { getAuthContext } from "./get-auth-context";
 import type { AuthGuardResult } from "./types";
 import type { Database, Tre60Role } from "../db/types";
 
+type Tre60SupabaseClient = SupabaseClient<Database, any, any, any, any>;
+
 async function requireRole(
-  supabase: SupabaseClient<Database>,
+  supabase: Tre60SupabaseClient,
   allowedRoles: Tre60Role[]
 ): Promise<AuthGuardResult> {
   const {
@@ -27,19 +29,19 @@ async function requireRole(
 }
 
 export async function requireActiveUser(
-  supabase: SupabaseClient<Database>
+  supabase: Tre60SupabaseClient
 ): Promise<AuthGuardResult> {
   return requireRole(supabase, ["admin", "employee", "customer"]);
 }
 
 export async function requireCustomer(
-  supabase: SupabaseClient<Database>
+  supabase: Tre60SupabaseClient
 ): Promise<AuthGuardResult> {
   return requireRole(supabase, ["customer"]);
 }
 
 export async function requireStaff(
-  supabase: SupabaseClient<Database>
+  supabase: Tre60SupabaseClient
 ): Promise<AuthGuardResult> {
   return requireRole(supabase, ["admin", "employee"]);
 }

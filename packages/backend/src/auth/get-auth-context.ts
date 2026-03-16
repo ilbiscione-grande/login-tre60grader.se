@@ -3,8 +3,10 @@ import type { AuthContext } from "./types";
 import { mapAuthContextRow } from "./types";
 import type { Database } from "../db/types";
 
+type Tre60SupabaseClient = SupabaseClient<Database, any, any, any, any>;
+
 export async function getAuthContext(
-  supabase: SupabaseClient<Database>
+  supabase: Tre60SupabaseClient
 ): Promise<AuthContext | null> {
   const {
     data: { session },
