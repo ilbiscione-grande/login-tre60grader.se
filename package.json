@@ -6,7 +6,9 @@
     "packages/*"
   ],
   "scripts": {
+    "build:login": "npm run build -w @tre60/login",
     "dev:login": "npm run dev -w @tre60/login",
+    "start:login": "npm run start -w @tre60/login",
     "typecheck": "tsc -p tsconfig.base.json --noEmit"
   }
 }

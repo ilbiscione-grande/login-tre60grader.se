@@ -17,6 +17,17 @@ copy apps\\login\\.env.local.example apps\\login\\.env.local
 npm run dev:login
 ```
 
+## Vercel
+
+Deploya från repo-roten, inte från `apps/login` som separat root directory.
+
+Rekommenderade inställningar:
+
+- Root Directory: repo root
+- Install Command: `npm install`
+- Build Command: `npm run build:login`
+- Framework Preset: `Next.js`
+
 Minst dessa env vars behövs:
 
 ```env
