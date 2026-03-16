@@ -7,16 +7,22 @@ import { createTre60BrowserClient } from "@tre60/backend";
 type SignOutButtonProps = {
   supabaseUrl: string;
   supabaseAnonKey: string;
+  authCookieDomain?: string;
 };
 
-export function SignOutButton({ supabaseUrl, supabaseAnonKey }: SignOutButtonProps) {
+export function SignOutButton({
+  supabaseUrl,
+  supabaseAnonKey,
+  authCookieDomain
+}: SignOutButtonProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   async function handleSignOut() {
     const supabase = createTre60BrowserClient({
       supabaseUrl,
-      supabaseAnonKey
+      supabaseAnonKey,
+      authCookieDomain
     });
 
     await supabase.auth.signOut();

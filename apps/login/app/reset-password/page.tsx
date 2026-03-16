@@ -29,6 +29,7 @@ export default async function ResetPasswordPage() {
       <ResetPasswordForm
         supabaseUrl={publicEnv.supabaseUrl}
         supabaseAnonKey={publicEnv.supabaseAnonKey}
+        authCookieDomain={publicEnv.authCookieDomain}
       />
     </main>
   );

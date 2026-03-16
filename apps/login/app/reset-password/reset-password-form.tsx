@@ -7,11 +7,13 @@ import { createTre60BrowserClient } from "@tre60/backend";
 type ResetPasswordFormProps = {
   supabaseUrl: string;
   supabaseAnonKey: string;
+  authCookieDomain?: string;
 };
 
 export function ResetPasswordForm({
   supabaseUrl,
-  supabaseAnonKey
+  supabaseAnonKey,
+  authCookieDomain
 }: ResetPasswordFormProps) {
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -37,7 +39,8 @@ export function ResetPasswordForm({
 
     const supabase = createTre60BrowserClient({
       supabaseUrl,
-      supabaseAnonKey
+      supabaseAnonKey,
+      authCookieDomain
     });
 
     const { error: updateError } = await supabase.auth.updateUser({ password });

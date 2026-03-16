@@ -9,6 +9,7 @@ type Mode = "password" | "magic_link";
 type LoginFormProps = {
   supabaseUrl: string;
   supabaseAnonKey: string;
+  authCookieDomain?: string;
 };
 
 const LOGIN_RATE_LIMIT_KEY = "tre60-login-rate-limit";
@@ -44,7 +45,11 @@ function writeRateLimitState(state: RateLimitState) {
   window.localStorage.setItem(LOGIN_RATE_LIMIT_KEY, JSON.stringify(state));
 }
 
-export function LoginForm({ supabaseUrl, supabaseAnonKey }: LoginFormProps) {
+export function LoginForm({
+  supabaseUrl,
+  supabaseAnonKey,
+  authCookieDomain
+}: LoginFormProps) {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
@@ -55,7 +60,8 @@ export function LoginForm({ supabaseUrl, supabaseAnonKey }: LoginFormProps) {
 
   const env = {
     supabaseUrl,
-    supabaseAnonKey
+    supabaseAnonKey,
+    authCookieDomain
   };
 
   async function handlePasswordSignIn(event: React.FormEvent<HTMLFormElement>) {

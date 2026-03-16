@@ -28,6 +28,7 @@ export default async function LoginIndexPage() {
             <LoginForm
               supabaseUrl={publicEnv.supabaseUrl}
               supabaseAnonKey={publicEnv.supabaseAnonKey}
+              authCookieDomain={publicEnv.authCookieDomain}
             />
           </div>
         </section>
@@ -58,6 +59,7 @@ export default async function LoginIndexPage() {
         <SignOutButton
           supabaseUrl={publicEnv.supabaseUrl}
           supabaseAnonKey={publicEnv.supabaseAnonKey}
+          authCookieDomain={publicEnv.authCookieDomain}
         />
       </section>
     </main>
