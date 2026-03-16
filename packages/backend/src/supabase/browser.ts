@@ -9,6 +9,7 @@ export type BrowserSupabaseEnv = {
 
 export function createTre60BrowserClient(env: BrowserSupabaseEnv) {
   return createBrowserClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {
+    isSingleton: false,
     cookieOptions: {
       domain: env.authCookieDomain,
       sameSite: "lax",
