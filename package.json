@@ -1,0 +1,12 @@
+{
+  "name": "tre60grader-platform",
+  "private": true,
+  "workspaces": [
+    "apps/login",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:login": "npm run dev -w @tre60/login",
+    "typecheck": "tsc -p tsconfig.base.json --noEmit"
+  }
+}
