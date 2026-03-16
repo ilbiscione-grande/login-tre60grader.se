@@ -45,7 +45,7 @@ export default async function LoginIndexPage() {
 
   const appRedirect = getAppRedirectForContext(context);
   if (appRedirect) {
-    redirect(appRedirect);
+    redirect(appRedirect as never);
   }
 
   return (
