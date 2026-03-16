@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import {
   createSupabaseCookieAdapter,
   createTre60ServerClient,
-  getAppRedirectForContext,
   getAuthContext
 } from "@tre60/backend";
 import { getPublicSupabaseEnv, getServerSupabaseEnv } from "@tre60/config";
@@ -44,9 +43,12 @@ export default async function LoginIndexPage() {
     redirect("/setup-account");
   }
 
-  const appRedirect = getAppRedirectForContext(context);
-  if (appRedirect) {
-    redirect(appRedirect as never);
+  if (context.role === "admin" || context.role === "employee") {
+    redirect("/handoff?app=intra" as never);
+  }
+
+  if (context.status === "active" && context.redirectUrl) {
+    redirect(context.redirectUrl as never);
   }
 
   return (
