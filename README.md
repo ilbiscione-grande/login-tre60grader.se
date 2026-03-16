@@ -33,6 +33,7 @@ Minst dessa env vars behövs:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.tre60grader.se
 NEXT_PUBLIC_LOGIN_APP_URL=http://localhost:3000
 NEXT_PUBLIC_PORTAL_APP_URL=https://portal.tre60grader.se
 NEXT_PUBLIC_INTRA_APP_URL=https://intra.tre60grader.se

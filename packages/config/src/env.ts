@@ -9,7 +9,8 @@ function requireEnv(name: string): string {
 export function getPublicSupabaseEnv() {
   return {
     supabaseUrl: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
-    supabaseAnonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    supabaseAnonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
+    authCookieDomain: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN
   };
 }
 

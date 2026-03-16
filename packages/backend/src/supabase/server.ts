@@ -4,6 +4,7 @@ import type { Database } from "../db/types";
 export type ServerSupabaseEnv = {
   supabaseUrl: string;
   supabaseAnonKey: string;
+  authCookieDomain?: string;
 };
 
 export function createTre60ServerClient(
@@ -11,6 +12,12 @@ export function createTre60ServerClient(
   cookies: CookieMethodsServer
 ) {
   return createServerClient<Database>(env.supabaseUrl, env.supabaseAnonKey, {
-    cookies
+    cookies,
+    cookieOptions: {
+      domain: env.authCookieDomain,
+      sameSite: "lax",
+      secure: env.supabaseUrl.startsWith("https://"),
+      path: "/"
+    }
   });
 }
