@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM"],
+    "jsx": "preserve",
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "strict": true,
@@ -12,5 +13,7 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true
-  }
+  },
+  "include": ["packages/**/*.ts", "apps/login/**/*.ts", "apps/login/**/*.tsx"],
+  "exclude": ["node_modules", "apps/intra", "apps/portal"]
 }

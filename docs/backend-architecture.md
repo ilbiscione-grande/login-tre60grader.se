@@ -236,10 +236,21 @@ NEXT_PUBLIC_INTRA_APP_URL=https://intra.tre60grader.se
 
 - Lita inte på klientens roll eller redirect-beslut. Läs auth-context på servern.
 - Låt inte apparna själva gissa roll från flera tabeller. Använd `tre60_auth_context()`.
+- Verifiera server-side användaren med Supabase innan auth-context används.
 - Kundåtkomst till orders ska bygga på explicit `orders.customer_id` eller `orders.customer_user_id`, inte indirekta antaganden.
 - Håll all känslig intern kontext i `internal_notes` eller rena interna tabeller.
 - Använd `service_role` enbart för adminflöden, inviteringar och bakgrundsjobb.
 - Lägg inte affärslogik i frontend guards om den redan kan uttryckas i RLS.
+
+## Långsiktig säker riktning
+
+Nuvarande lösning använder callback-baserad handoff för att få intern login att fungera stabilt mellan subdomäner. Det är rätt pragmatisk lösning nu, men slutmålet bör vara:
+
+1. verifierad serverauth i alla appar
+2. MFA för interna roller
+3. server-side rate limiting och säkerhetsloggning
+4. one-time handoff exchange i stället för råa tokens i URL
+5. step-up auth för särskilt känsliga ekonomiåtgärder
 
 ## Framtida utbyggnad
 

@@ -10,12 +10,12 @@ async function requireRole(
   allowedRoles: Tre60Role[]
 ): Promise<AuthGuardResult> {
   const {
-    data: { session },
-    error: sessionError
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError
+  } = await supabase.auth.getUser();
 
-  if (sessionError) throw sessionError;
-  if (!session) return { ok: false, reason: "no_session" };
+  if (userError) throw userError;
+  if (!user) return { ok: false, reason: "no_session" };
 
   const context = await getAuthContext(supabase);
   if (!context) return { ok: false, reason: "missing_context" };

@@ -1,5 +1,6 @@
 export * from "./auth/get-auth-context";
 export * from "./auth/guards";
+export * from "./auth/handoff";
 export * from "./auth/redirects";
 export * from "./auth/types";
 export * from "./db/types";

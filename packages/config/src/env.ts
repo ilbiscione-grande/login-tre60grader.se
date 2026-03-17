@@ -10,7 +10,8 @@ export function getPublicSupabaseEnv() {
   return {
     supabaseUrl: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
     supabaseAnonKey: requireEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-    authCookieDomain: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN
+    authCookieDomain: process.env.NEXT_PUBLIC_AUTH_COOKIE_DOMAIN,
+    internalHandoffMode: process.env.NEXT_PUBLIC_INTERNAL_HANDOFF_MODE ?? "token"
   };
 }
 
@@ -22,6 +23,13 @@ export function getAdminSupabaseEnv() {
   return {
     supabaseUrl: requireEnv("NEXT_PUBLIC_SUPABASE_URL"),
     serviceRoleKey: requireEnv("SUPABASE_SERVICE_ROLE_KEY")
+  };
+}
+
+export function getSecurityEnv() {
+  return {
+    authHandoffEncryptionKey: requireEnv("AUTH_HANDOFF_ENCRYPTION_KEY"),
+    authHandoffSharedSecret: requireEnv("AUTH_HANDOFF_SHARED_SECRET")
   };
 }
 

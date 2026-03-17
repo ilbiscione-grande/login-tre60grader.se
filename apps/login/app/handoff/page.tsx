@@ -25,6 +25,7 @@ export default async function HandoffPage({ searchParams }: HandoffPageProps) {
       supabaseUrl={publicEnv.supabaseUrl}
       supabaseAnonKey={publicEnv.supabaseAnonKey}
       authCookieDomain={publicEnv.authCookieDomain}
+      internalHandoffMode={publicEnv.internalHandoffMode}
       intraAppUrl={appUrls.intraAppUrl}
       portalAppUrl={appUrls.portalAppUrl}
     />

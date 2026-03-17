@@ -39,6 +39,7 @@ type HandoffClientProps = {
   supabaseUrl: string;
   supabaseAnonKey: string;
   authCookieDomain?: string;
+  internalHandoffMode: string;
   intraAppUrl: string;
   portalAppUrl: string;
 };
@@ -48,6 +49,7 @@ export function HandoffClient({
   supabaseUrl,
   supabaseAnonKey,
   authCookieDomain,
+  internalHandoffMode,
   intraAppUrl,
   portalAppUrl
 }: HandoffClientProps) {
@@ -102,6 +104,40 @@ export function HandoffClient({
       }
 
       setMessage("Skickar dig vidare...");
+
+      if (internalHandoffMode === "code") {
+        const response = await fetch("/api/handoff", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            app,
+            next: "/",
+            accessToken: session.access_token,
+            refreshToken: session.refresh_token,
+            tokenType: session.token_type,
+            expiresAt: session.expires_at,
+            expiresIn: session.expires_in
+          })
+        });
+
+        if (!response.ok) {
+          window.location.replace("/auth/error?code=handoff_create_failed");
+          return;
+        }
+
+        const payload = (await response.json()) as { redirectTo?: string };
+
+        if (!payload.redirectTo) {
+          window.location.replace("/auth/error?code=handoff_create_failed");
+          return;
+        }
+
+        window.location.replace(payload.redirectTo);
+        return;
+      }
+
       window.location.replace(
         buildTargetUrl(app, intraAppUrl, portalAppUrl, {
           access_token: session.access_token,
@@ -118,7 +154,15 @@ export function HandoffClient({
     return () => {
       cancelled = true;
     };
-  }, [app, authCookieDomain, intraAppUrl, portalAppUrl, supabaseAnonKey, supabaseUrl]);
+  }, [
+    app,
+    authCookieDomain,
+    internalHandoffMode,
+    intraAppUrl,
+    portalAppUrl,
+    supabaseAnonKey,
+    supabaseUrl
+  ]);
 
   return (
     <main className="shell">

@@ -9,14 +9,14 @@ export async function getAuthContext(
   supabase: Tre60SupabaseClient
 ): Promise<AuthContext | null> {
   const {
-    data: { session },
-    error: sessionError
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError
+  } = await supabase.auth.getUser();
 
-  if (sessionError) throw sessionError;
-  if (!session) return null;
+  if (userError) throw userError;
+  if (!user) return null;
 
-  const { data, error } = await supabase.rpc("tre60_auth_context", {});
+  const { data, error } = await supabase.rpc("tre60_auth_context");
 
   if (error) throw error;
 
