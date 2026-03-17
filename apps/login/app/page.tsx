@@ -47,11 +47,14 @@ export default async function LoginIndexPage() {
 
   if (context.role === "admin" || context.role === "employee") {
     const securityContext = await getAuthSecurityContext(supabase);
+    const shouldChallengeMfa =
+      Boolean(securityContext?.hasVerifiedMfa) && !securityContext?.mfaSatisfied;
 
     if (
-      securityEnv.enforceInternalMfa &&
-      securityContext?.mfaRequired &&
-      !securityContext.mfaSatisfied
+      shouldChallengeMfa ||
+      (securityEnv.enforceInternalMfa &&
+        securityContext?.mfaRequired &&
+        !securityContext.mfaSatisfied)
     ) {
       redirect("/verify-mfa");
     }
