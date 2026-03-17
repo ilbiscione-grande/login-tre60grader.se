@@ -1,11 +1,9 @@
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import {
   clearAuthRateLimit,
   consumeAuthRateLimit,
-  createSupabaseCookieAdapter,
   createTre60AdminClient,
-  createTre60ServerClient,
   getAuthRateLimitKey,
   getAuthRateLimitStatus,
   getClientIp,
@@ -13,11 +11,13 @@ import {
   logAuthSecurityEvent,
   normalizeIdentifier
 } from "@tre60/backend";
-import { getAdminSupabaseEnv, getServerSupabaseEnv } from "@tre60/config";
+import { getAdminSupabaseEnv } from "@tre60/config";
 
 type Body = {
   email?: string;
-  password?: string;
+  mode?: "precheck" | "result";
+  outcome?: "success" | "failure";
+  reason?: string;
 };
 
 const WINDOW = { maxAttempts: 5, windowSeconds: 600, blockSeconds: 900 };
@@ -25,9 +25,9 @@ const WINDOW = { maxAttempts: 5, windowSeconds: 600, blockSeconds: 900 };
 export async function POST(request: Request) {
   const body = (await request.json()) as Body;
   const email = normalizeIdentifier(body.email ?? "");
-  const password = body.password ?? "";
+  const mode = body.mode ?? "precheck";
 
-  if (!email || !password) {
+  if (!email) {
     return NextResponse.json({ error: "missing_credentials" }, { status: 400 });
   }
 
@@ -70,25 +70,44 @@ export async function POST(request: Request) {
     );
   }
 
-  const cookieStore = await cookies();
-  const supabase = createTre60ServerClient(
-    getServerSupabaseEnv(),
-    createSupabaseCookieAdapter(cookieStore)
-  );
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (mode === "precheck") {
+    return NextResponse.json({ ok: true });
+  }
 
-  if (error) {
-    await Promise.all([
+  if (body.outcome === "failure") {
+    const [ipResult, identifierResult] = await Promise.all([
       consumeAuthRateLimit(admin, "password_sign_in_ip", ipKey, WINDOW),
       consumeAuthRateLimit(admin, "password_sign_in_identifier", identifierKey, WINDOW),
       logAuthSecurityEvent(admin, "password_sign_in", "failure", {
         identifier: email,
         ip,
-        userAgent
+        userAgent,
+        metadata: {
+          reason: body.reason ?? "browser_sign_in_failed"
+        }
       })
     ]);
 
+    const retryAfterSeconds = Math.max(
+      ipResult.retry_after_seconds,
+      identifierResult.retry_after_seconds
+    );
+
+    if (ipResult.is_blocked || identifierResult.is_blocked) {
+      return NextResponse.json(
+        {
+          error: "rate_limited",
+          retryAfterSeconds
+        },
+        { status: 429 }
+      );
+    }
+
     return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
+  }
+
+  if (body.outcome !== "success") {
+    return NextResponse.json({ error: "invalid_result" }, { status: 400 });
   }
 
   await Promise.all([

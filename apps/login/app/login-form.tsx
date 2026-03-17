@@ -75,16 +75,16 @@ export function LoginForm({
       return;
     }
 
-    const response = await fetch("/api/auth/password-sign-in", {
+    const precheckResponse = await fetch("/api/auth/password-sign-in", {
       method: "POST",
       headers: {
         "content-type": "application/json"
       },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, mode: "precheck" })
     });
 
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as
+    if (!precheckResponse.ok) {
+      const payload = (await precheckResponse.json().catch(() => null)) as
         | { error?: string; retryAfterSeconds?: number }
         | null;
       const nextFailedAttempts = rateLimit.failedAttempts + 1;
@@ -96,7 +96,7 @@ export function LoginForm({
         blockedUntil
       });
 
-      if (response.status === 429 && payload?.retryAfterSeconds) {
+      if (precheckResponse.status === 429 && payload?.retryAfterSeconds) {
         setError(
           `För många försök. Vänta ${payload.retryAfterSeconds} sekunder och försök igen.`
         );
@@ -107,9 +107,59 @@ export function LoginForm({
       return;
     }
 
-    writeRateLimitState({ failedAttempts: 0, blockedUntil: 0 });
+    const supabase = createTre60BrowserClient(env);
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (signInError) {
+      const failureResponse = await fetch("/api/auth/password-sign-in", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          mode: "result",
+          outcome: "failure",
+          reason: signInError.code ?? signInError.name ?? signInError.message
+        })
+      });
+
+      const payload = (await failureResponse.json().catch(() => null)) as
+        | { error?: string; retryAfterSeconds?: number }
+        | null;
+      const nextFailedAttempts = rateLimit.failedAttempts + 1;
+      const blockedUntil =
+        nextFailedAttempts >= MAX_FAILED_ATTEMPTS ? Date.now() + COOLDOWN_MS : 0;
+
+      writeRateLimitState({
+        failedAttempts: blockedUntil ? 0 : nextFailedAttempts,
+        blockedUntil
+      });
+
+      if (failureResponse.status === 429 && payload?.retryAfterSeconds) {
+        setError(
+          `För många försök. Vänta ${payload.retryAfterSeconds} sekunder och försök igen.`
+        );
+        return;
+      }
+
+      setError("Inloggningen misslyckades. Kontrollera uppgifterna och försök igen.");
+      return;
+    }
+
+    await fetch("/api/auth/password-sign-in", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ email, mode: "result", outcome: "success" })
+    });
 
     startTransition(() => {
+      writeRateLimitState({ failedAttempts: 0, blockedUntil: 0 });
       router.refresh();
     });
   }
