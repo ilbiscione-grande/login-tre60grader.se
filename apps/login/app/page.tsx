@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import {
   createSupabaseCookieAdapter,
+  getAuthSecurityContext,
   createTre60ServerClient,
   getAuthContext
 } from "@tre60/backend";
-import { getPublicSupabaseEnv, getServerSupabaseEnv } from "@tre60/config";
+import { getPublicSupabaseEnv, getSecurityEnv, getServerSupabaseEnv } from "@tre60/config";
 import { LoginForm } from "./login-form";
 import { SignOutButton } from "./sign-out-button";
 
@@ -13,6 +14,7 @@ export default async function LoginIndexPage() {
   const cookieStore = await cookies();
   const serverEnv = getServerSupabaseEnv();
   const publicEnv = getPublicSupabaseEnv();
+  const securityEnv = getSecurityEnv();
   const supabase = createTre60ServerClient(serverEnv, createSupabaseCookieAdapter(cookieStore));
   const context = await getAuthContext(supabase);
 
@@ -44,6 +46,16 @@ export default async function LoginIndexPage() {
   }
 
   if (context.role === "admin" || context.role === "employee") {
+    const securityContext = await getAuthSecurityContext(supabase);
+
+    if (
+      securityEnv.enforceInternalMfa &&
+      securityContext?.mfaRequired &&
+      !securityContext.mfaSatisfied
+    ) {
+      redirect("/verify-mfa");
+    }
+
     redirect("/handoff?app=intra" as never);
   }
 

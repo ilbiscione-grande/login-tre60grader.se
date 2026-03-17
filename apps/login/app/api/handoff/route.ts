@@ -5,8 +5,11 @@ import {
   createHandoffToken,
   createTre60AdminClient,
   encryptSessionPayload,
+  getClientIp,
+  getUserAgent,
   hashHandoffSecret,
-  hashUserAgent
+  hashUserAgent,
+  logAuthSecurityEvent
 } from "@tre60/backend";
 import type { Database, Tre60AuthContextRow } from "@tre60/backend";
 import { getAdminSupabaseEnv, getAppUrls, getSecurityEnv, getServerSupabaseEnv } from "@tre60/config";
@@ -41,12 +44,20 @@ export async function POST(request: Request) {
   const body = (await request.json()) as HandoffRequestBody;
   const targetApp = body.app === "portal" ? "portal" : "intra";
   const nextPath = getSafeNextPath(body.next);
+  const headerStore = await headers();
+  const ip = getClientIp(headerStore);
+  const userAgent = getUserAgent(headerStore);
+  const admin = createTre60AdminClient(getAdminSupabaseEnv()) as any;
 
   if (!body.accessToken || !body.refreshToken || !body.tokenType) {
+    await logAuthSecurityEvent(admin, "handoff_create", "failure", {
+      ip,
+      userAgent,
+      metadata: { reason: "missing_session_tokens", targetApp }
+    });
     return NextResponse.json({ error: "missing_session_tokens" }, { status: 400 });
   }
 
-  const headerStore = await headers();
   const serverEnv = getServerSupabaseEnv();
   const authClient = createClient<Database>(serverEnv.supabaseUrl, serverEnv.supabaseAnonKey, {
     auth: {
@@ -65,6 +76,11 @@ export async function POST(request: Request) {
   } = await authClient.auth.getUser(body.accessToken);
 
   if (userError || !user) {
+    await logAuthSecurityEvent(admin, "handoff_create", "failure", {
+      ip,
+      userAgent,
+      metadata: { reason: "invalid_session", targetApp }
+    });
     return NextResponse.json({ error: "invalid_session" }, { status: 401 });
   }
 
@@ -72,18 +88,42 @@ export async function POST(request: Request) {
   const row = Array.isArray(contextRows) ? (contextRows[0] as Tre60AuthContextRow | null) : null;
 
   if (contextError || !row) {
+    await logAuthSecurityEvent(admin, "handoff_create", "failure", {
+      identifier: user.email ?? user.id,
+      ip,
+      userAgent,
+      metadata: { reason: "invalid_context", targetApp }
+    });
     return NextResponse.json({ error: "invalid_context" }, { status: 401 });
   }
 
   if (row.status !== "active" || !row.role || !row.user_id) {
+    await logAuthSecurityEvent(admin, "handoff_create", "failure", {
+      identifier: user.email ?? user.id,
+      ip,
+      userAgent,
+      metadata: { reason: "inactive_or_missing_role", targetApp, status: row.status, role: row.role }
+    });
     return NextResponse.json({ error: "invalid_context" }, { status: 401 });
   }
 
   if (targetApp === "intra" && !["admin", "employee"].includes(row.role)) {
+    await logAuthSecurityEvent(admin, "handoff_create", "failure", {
+      identifier: user.email ?? user.id,
+      ip,
+      userAgent,
+      metadata: { reason: "wrong_role", targetApp, role: row.role }
+    });
     return NextResponse.json({ error: "wrong_role" }, { status: 403 });
   }
 
   if (targetApp === "portal" && row.role !== "customer") {
+    await logAuthSecurityEvent(admin, "handoff_create", "failure", {
+      identifier: user.email ?? user.id,
+      ip,
+      userAgent,
+      metadata: { reason: "wrong_role", targetApp, role: row.role }
+    });
     return NextResponse.json({ error: "wrong_role" }, { status: 403 });
   }
 
@@ -100,7 +140,6 @@ export async function POST(request: Request) {
     securityEnv.authHandoffEncryptionKey
   );
 
-  const admin = createTre60AdminClient(getAdminSupabaseEnv()) as any;
   const expiresAt = new Date(Date.now() + 60_000).toISOString();
 
   const { error } = await admin.from("auth_handoffs").insert({
@@ -113,12 +152,18 @@ export async function POST(request: Request) {
     payload_ciphertext: encrypted.ciphertext,
     payload_iv: encrypted.iv,
     payload_auth_tag: encrypted.authTag,
-    created_ip: headerStore.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
-    created_user_agent_hash: hashUserAgent(headerStore.get("user-agent")),
+    created_ip: ip,
+    created_user_agent_hash: hashUserAgent(userAgent),
     expires_at: expiresAt
   });
 
   if (error) {
+    await logAuthSecurityEvent(admin, "handoff_create", "failure", {
+      identifier: user.email ?? user.id,
+      ip,
+      userAgent,
+      metadata: { reason: "handoff_create_failed", targetApp }
+    });
     return NextResponse.json({ error: "handoff_create_failed" }, { status: 500 });
   }
 
@@ -129,6 +174,13 @@ export async function POST(request: Request) {
   );
   targetUrl.searchParams.set("handoff", `${token.id}.${token.secret}`);
   targetUrl.searchParams.set("next", nextPath);
+
+  await logAuthSecurityEvent(admin, "handoff_create", "success", {
+    identifier: user.email ?? user.id,
+    ip,
+    userAgent,
+    metadata: { targetApp, role: row.role, nextPath }
+  });
 
   return NextResponse.json({ redirectTo: targetUrl.toString() });
 }

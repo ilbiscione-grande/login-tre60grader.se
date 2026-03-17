@@ -75,13 +75,18 @@ export function LoginForm({
       return;
     }
 
-    const supabase = createTre60BrowserClient(env);
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password
+    const response = await fetch("/api/auth/password-sign-in", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ email, password })
     });
 
-    if (signInError) {
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; retryAfterSeconds?: number }
+        | null;
       const nextFailedAttempts = rateLimit.failedAttempts + 1;
       const blockedUntil =
         nextFailedAttempts >= MAX_FAILED_ATTEMPTS ? Date.now() + COOLDOWN_MS : 0;
@@ -90,6 +95,13 @@ export function LoginForm({
         failedAttempts: blockedUntil ? 0 : nextFailedAttempts,
         blockedUntil
       });
+
+      if (response.status === 429 && payload?.retryAfterSeconds) {
+        setError(
+          `För många försök. Vänta ${payload.retryAfterSeconds} sekunder och försök igen.`
+        );
+        return;
+      }
 
       setError("Inloggningen misslyckades. Kontrollera uppgifterna och försök igen.");
       return;
@@ -107,15 +119,26 @@ export function LoginForm({
     setError(null);
     setMessage(null);
 
-    const supabase = createTre60BrowserClient(env);
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`
-      }
+    const response = await fetch("/api/auth/magic-link", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ email })
     });
 
-    if (otpError) {
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; retryAfterSeconds?: number }
+        | null;
+
+      if (response.status === 429 && payload?.retryAfterSeconds) {
+        setError(
+          `För många försök. Vänta ${payload.retryAfterSeconds} sekunder innan du skickar igen.`
+        );
+        return;
+      }
+
       setError("Det gick inte att skicka magic link just nu. Försök igen.");
       return;
     }
@@ -132,12 +155,26 @@ export function LoginForm({
       return;
     }
 
-    const supabase = createTre60BrowserClient(env);
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+    const response = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({ email })
     });
 
-    if (resetError) {
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; retryAfterSeconds?: number }
+        | null;
+
+      if (response.status === 429 && payload?.retryAfterSeconds) {
+        setError(
+          `För många försök. Vänta ${payload.retryAfterSeconds} sekunder innan du skickar igen.`
+        );
+        return;
+      }
+
       setError("Det gick inte att skicka återställningslänken just nu.");
       return;
     }

@@ -29,7 +29,8 @@ export function getAdminSupabaseEnv() {
 export function getSecurityEnv() {
   return {
     authHandoffEncryptionKey: requireEnv("AUTH_HANDOFF_ENCRYPTION_KEY"),
-    authHandoffSharedSecret: requireEnv("AUTH_HANDOFF_SHARED_SECRET")
+    authHandoffSharedSecret: requireEnv("AUTH_HANDOFF_SHARED_SECRET"),
+    enforceInternalMfa: process.env.ENFORCE_INTERNAL_MFA === "true"
   };
 }
 

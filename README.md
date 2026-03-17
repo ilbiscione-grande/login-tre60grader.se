@@ -39,6 +39,7 @@ NEXT_PUBLIC_AUTH_COOKIE_DOMAIN=.tre60grader.se
 NEXT_PUBLIC_INTERNAL_HANDOFF_MODE=token
 AUTH_HANDOFF_ENCRYPTION_KEY=
 AUTH_HANDOFF_SHARED_SECRET=
+ENFORCE_INTERNAL_MFA=false
 NEXT_PUBLIC_LOGIN_APP_URL=http://localhost:3000
 NEXT_PUBLIC_PORTAL_APP_URL=https://portal.tre60grader.se
 NEXT_PUBLIC_INTRA_APP_URL=https://intra.tre60grader.se
@@ -51,6 +52,7 @@ NEXT_PUBLIC_INTRA_APP_URL=https://intra.tre60grader.se
 - `/`
 - `/login`
 - `/handoff`
+- `/verify-mfa`
 - `/api/handoff`
 - `/api/handoff/consume`
 - `/auth/callback`

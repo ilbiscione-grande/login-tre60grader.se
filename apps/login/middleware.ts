@@ -2,6 +2,11 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 function buildCsp(): string {
+  const scriptSrc =
+    process.env.NODE_ENV === "production"
+      ? "script-src 'self' 'unsafe-inline'"
+      : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+
   return [
     "default-src 'self'",
     "base-uri 'self'",
@@ -9,7 +14,7 @@ function buildCsp(): string {
     "form-action 'self'",
     "img-src 'self' data:",
     "object-src 'none'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    scriptSrc,
     "style-src 'self' 'unsafe-inline'",
     "connect-src 'self' https://fyrmjmnixfnjmjflhtnf.supabase.co"
   ].join("; ");

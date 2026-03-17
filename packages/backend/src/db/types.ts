@@ -10,6 +10,16 @@ export type Tre60AuthContextRow = {
   redirect_url: string | null;
 };
 
+export type Tre60AuthSecurityContextRow = {
+  user_id: string | null;
+  role: Tre60Role | null;
+  status: Tre60UserStatus | null;
+  session_aal: string | null;
+  has_verified_mfa: boolean | null;
+  mfa_required: boolean | null;
+  mfa_satisfied: boolean | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -55,6 +65,10 @@ export type Database = {
       tre60_auth_context: {
         Args: Record<string, never>;
         Returns: Tre60AuthContextRow[];
+      };
+      tre60_auth_security_context: {
+        Args: Record<string, never>;
+        Returns: Tre60AuthSecurityContextRow[];
       };
     };
   };
