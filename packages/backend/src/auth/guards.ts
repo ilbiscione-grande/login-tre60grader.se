@@ -14,7 +14,14 @@ async function requireRole(
     error: userError
   } = await supabase.auth.getUser();
 
-  if (userError) throw userError;
+  if (userError) {
+    if (userError.name === "AuthSessionMissingError") {
+      return { ok: false, reason: "no_session" };
+    }
+
+    throw userError;
+  }
+
   if (!user) return { ok: false, reason: "no_session" };
 
   const context = await getAuthContext(supabase);

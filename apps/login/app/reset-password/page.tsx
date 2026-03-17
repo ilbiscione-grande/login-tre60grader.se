@@ -15,11 +15,16 @@ export default async function ResetPasswordPage() {
     createSupabaseCookieAdapter(cookieStore)
   );
   const {
-    data: { user }
+    data: { user },
+    error
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (error?.name === "AuthSessionMissingError" || !user) {
     redirect("/auth/error?code=missing_reset_session");
+  }
+
+  if (error) {
+    throw error;
   }
 
   return (

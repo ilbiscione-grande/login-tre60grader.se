@@ -13,7 +13,14 @@ export async function getAuthContext(
     error: userError
   } = await supabase.auth.getUser();
 
-  if (userError) throw userError;
+  if (userError) {
+    if (userError.name === "AuthSessionMissingError") {
+      return null;
+    }
+
+    throw userError;
+  }
+
   if (!user) return null;
 
   const { data, error } = await supabase.rpc("tre60_auth_context");
