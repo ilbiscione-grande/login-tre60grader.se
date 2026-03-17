@@ -1,15 +1,14 @@
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import {
   createHandoffToken,
-  createSupabaseCookieAdapter,
   createTre60AdminClient,
-  createTre60ServerClient,
   encryptSessionPayload,
-  getAuthContext,
   hashHandoffSecret,
   hashUserAgent
 } from "@tre60/backend";
+import type { Database, Tre60AuthContextRow } from "@tre60/backend";
 import { getAdminSupabaseEnv, getAppUrls, getSecurityEnv, getServerSupabaseEnv } from "@tre60/config";
 
 type HandoffRequestBody = {
@@ -47,23 +46,44 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "missing_session_tokens" }, { status: 400 });
   }
 
-  const cookieStore = await cookies();
   const headerStore = await headers();
-  const supabase = createTre60ServerClient(
-    getServerSupabaseEnv(),
-    createSupabaseCookieAdapter(cookieStore)
-  );
-  const context = await getAuthContext(supabase);
+  const serverEnv = getServerSupabaseEnv();
+  const authClient = createClient<Database>(serverEnv.supabaseUrl, serverEnv.supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${body.accessToken}`
+      }
+    }
+  });
+  const {
+    data: { user },
+    error: userError
+  } = await authClient.auth.getUser(body.accessToken);
 
-  if (!context || context.status !== "active" || !context.role) {
+  if (userError || !user) {
+    return NextResponse.json({ error: "invalid_session" }, { status: 401 });
+  }
+
+  const { data: contextRows, error: contextError } = await authClient.rpc("tre60_auth_context");
+  const row = Array.isArray(contextRows) ? (contextRows[0] as Tre60AuthContextRow | null) : null;
+
+  if (contextError || !row) {
     return NextResponse.json({ error: "invalid_context" }, { status: 401 });
   }
 
-  if (targetApp === "intra" && !["admin", "employee"].includes(context.role)) {
+  if (row.status !== "active" || !row.role || !row.user_id) {
+    return NextResponse.json({ error: "invalid_context" }, { status: 401 });
+  }
+
+  if (targetApp === "intra" && !["admin", "employee"].includes(row.role)) {
     return NextResponse.json({ error: "wrong_role" }, { status: 403 });
   }
 
-  if (targetApp === "portal" && context.role !== "customer") {
+  if (targetApp === "portal" && row.role !== "customer") {
     return NextResponse.json({ error: "wrong_role" }, { status: 403 });
   }
 
@@ -85,9 +105,9 @@ export async function POST(request: Request) {
 
   const { error } = await admin.from("auth_handoffs").insert({
     id: token.id,
-    user_id: context.userId,
+    user_id: row.user_id,
     target_app: targetApp,
-    role: context.role,
+    role: row.role,
     redirect_path: nextPath,
     secret_hash: hashHandoffSecret(token.secret),
     payload_ciphertext: encrypted.ciphertext,
