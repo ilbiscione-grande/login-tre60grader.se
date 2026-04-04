@@ -3,17 +3,19 @@ import { NextResponse } from "next/server";
 import {
   consumeAuthRateLimit,
   createTre60AdminClient,
-  createTre60ServerClient,
   getAuthRateLimitKey,
   getClientIp,
   getUserAgent,
   logAuthSecurityEvent,
   normalizeIdentifier
 } from "@tre60/backend";
-import { getAdminSupabaseEnv, getAppUrls, getServerSupabaseEnv } from "@tre60/config";
+import { getAdminSupabaseEnv } from "@tre60/config";
 
 type Body = {
   email?: string;
+  mode?: "precheck" | "result";
+  outcome?: "success" | "failure";
+  reason?: string;
 };
 
 const WINDOW = { maxAttempts: 5, windowSeconds: 900, blockSeconds: 1800 };
@@ -30,6 +32,21 @@ export async function POST(request: Request) {
   const ip = getClientIp(headerStore);
   const userAgent = getUserAgent(headerStore);
   const admin = createTre60AdminClient(getAdminSupabaseEnv()) as any;
+
+  if (body.mode === "result") {
+    await logAuthSecurityEvent(admin, "magic_link_send", body.outcome === "failure" ? "failure" : "success", {
+      identifier: email,
+      ip,
+      userAgent,
+      metadata: body.reason ? { reason: body.reason } : undefined
+    });
+
+    if (body.outcome === "failure") {
+      return NextResponse.json({ error: "magic_link_failed" }, { status: 400 });
+    }
+
+    return NextResponse.json({ ok: true });
+  }
 
   const rateLimit = await consumeAuthRateLimit(
     admin,
@@ -50,33 +67,6 @@ export async function POST(request: Request) {
       { error: "rate_limited", retryAfterSeconds: rateLimit.retry_after_seconds },
       { status: 429 }
     );
-  }
-
-  const appUrls = getAppUrls();
-  const supabase = createTre60ServerClient(
-    getServerSupabaseEnv(),
-    {
-      getAll() {
-        return [];
-      },
-      setAll() {}
-    }
-  );
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${appUrls.loginAppUrl}/auth/callback`
-    }
-  });
-
-  await logAuthSecurityEvent(admin, "magic_link_send", error ? "failure" : "success", {
-    identifier: email,
-    ip,
-    userAgent
-  });
-
-  if (error) {
-    return NextResponse.json({ error: "magic_link_failed" }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

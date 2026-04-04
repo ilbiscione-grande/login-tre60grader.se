@@ -169,26 +169,52 @@ export function LoginForm({
     setError(null);
     setMessage(null);
 
-    const response = await fetch("/api/auth/magic-link", {
+    const precheckResponse = await fetch("/api/auth/magic-link", {
       method: "POST",
       headers: {
         "content-type": "application/json"
       },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email, mode: "precheck" })
     });
 
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => null)) as
+    if (!precheckResponse.ok) {
+      const payload = (await precheckResponse.json().catch(() => null)) as
         | { error?: string; retryAfterSeconds?: number }
         | null;
 
-      if (response.status === 429 && payload?.retryAfterSeconds) {
+      if (precheckResponse.status === 429 && payload?.retryAfterSeconds) {
         setError(
           `För många försök. Vänta ${payload.retryAfterSeconds} sekunder innan du skickar igen.`
         );
         return;
       }
 
+      setError("Det gick inte att skicka magic link just nu. Försök igen.");
+      return;
+    }
+
+    const supabase = createTre60BrowserClient(env);
+    const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
+
+    await fetch("/api/auth/magic-link", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        email,
+        mode: "result",
+        outcome: magicLinkError ? "failure" : "success",
+        reason: magicLinkError?.code ?? magicLinkError?.name ?? magicLinkError?.message
+      })
+    });
+
+    if (magicLinkError) {
       setError("Det gick inte att skicka magic link just nu. Försök igen.");
       return;
     }

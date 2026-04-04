@@ -16,7 +16,7 @@ as $$
       select 1
       from public.company_members cm
       where cm.user_id = auth.uid()
-        and cm.role in ('employee', 'member')
+        and cm.role in ('employee', 'member', 'finance', 'auditor')
     ) then 'employee'::public.tre60_role
     when exists (
       select 1
