@@ -6,6 +6,16 @@ import {
 } from "@tre60/backend";
 import { getServerSupabaseEnv } from "@tre60/config";
 
+function isSupportedEmailOtpType(value: string | null): value is "magiclink" | "recovery" | "invite" | "email" | "email_change" {
+  return (
+    value === "magiclink" ||
+    value === "recovery" ||
+    value === "invite" ||
+    value === "email" ||
+    value === "email_change"
+  );
+}
+
 function getSafeNextPath(value: string | null): string {
   if (!value || !value.startsWith("/")) {
     return "/";
@@ -21,9 +31,11 @@ function getSafeNextPath(value: string | null): string {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
+  const tokenHash = url.searchParams.get("token_hash");
+  const type = url.searchParams.get("type");
   const next = getSafeNextPath(url.searchParams.get("next"));
 
-  if (!code) {
+  if (!code && !tokenHash) {
     return NextResponse.redirect(new URL("/auth/error?code=missing_code", url.origin));
   }
 
@@ -33,7 +45,24 @@ export async function GET(request: Request) {
     createSupabaseCookieAdapter(cookieStore)
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (tokenHash) {
+    if (!isSupportedEmailOtpType(type)) {
+      return NextResponse.redirect(new URL("/auth/error?code=missing_code", url.origin));
+    }
+
+    const { error } = await supabase.auth.verifyOtp({
+      token_hash: tokenHash,
+      type
+    });
+
+    if (error) {
+      return NextResponse.redirect(new URL("/auth/error?code=otp_verification_failed", url.origin));
+    }
+
+    return NextResponse.redirect(new URL(next, url.origin));
+  }
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code!);
 
   if (error) {
     return NextResponse.redirect(new URL("/auth/error?code=callback_exchange_failed", url.origin));

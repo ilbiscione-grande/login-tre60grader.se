@@ -4,6 +4,7 @@ const messages: Record<string, string> = {
   unknown_role: "Kontot kunde inte matchas mot en giltig roll.",
   missing_code: "Inloggningslänken saknar giltig kod.",
   callback_exchange_failed: "Det gick inte att slutföra inloggningen från länken.",
+  otp_verification_failed: "Länken kunde inte verifieras. Be om en ny magic link och öppna den direkt.",
   missing_reset_session: "Lösenordsåterställningen saknar giltig session."
 };
 
