@@ -78,7 +78,7 @@ derived_access as (
       when exists (
         select 1
         from company_memberships cm
-        where cm.role = 'employee'
+        where cm.role in ('employee', 'member')
       ) then 'employee'
       when exists (
         select 1
@@ -133,6 +133,7 @@ select
         'profile_missing', case when c.exists_in_auth_users and not c.exists_in_profiles then 'Saknas i public.profiles' end,
         'inactive_profile', case when c.profile_status is not null and c.profile_status <> 'active' then 'profiles.status är inte active' end,
         'role_missing', case when c.derived_role is null then 'Ingen giltig roll kunde härledas från company_members/customer_users' end,
+        'member_compat', case when c.derived_role = 'employee' and exists (select 1 from company_memberships cm where cm.role = 'member') then 'company_members.role = member mappas till intern employee-kompatibilitet i auth-lagret' end,
         'mfa_optional', case when c.derived_role in ('admin', 'employee') and not c.has_verified_mfa then 'Intern användare utan verifierad MFA' end
       )
     )
