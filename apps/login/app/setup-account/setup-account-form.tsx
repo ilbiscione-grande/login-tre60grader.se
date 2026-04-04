@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createTre60BrowserClient } from "@tre60/backend";
 
 type SetupAccountFormProps = {
   supabaseUrl: string;
@@ -37,28 +36,19 @@ export function SetupAccountForm({
       return;
     }
 
-    const supabase = createTre60BrowserClient({
-      supabaseUrl,
-      supabaseAnonKey,
-      authCookieDomain
-    });
-
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-
-    if (updateError) {
-      setError("Det gick inte att spara lösenordet.");
-      return;
-    }
-
     const activateResponse = await fetch("/api/auth/setup-account", {
       method: "POST",
       headers: {
         "content-type": "application/json"
-      }
+      },
+      body: JSON.stringify({ password })
     });
 
     if (!activateResponse.ok) {
-      setError("Lösenordet sparades, men kontot kunde inte aktiveras.");
+      const payload = (await activateResponse.json().catch(() => null)) as
+        | { error?: string; message?: string }
+        | null;
+      setError(payload?.message ?? "Det gick inte att spara lösenordet.");
       return;
     }
 
