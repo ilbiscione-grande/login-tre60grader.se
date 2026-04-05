@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   createSupabaseCookieAdapter,
-  createTre60ServerClient
+  createTre60ServerClient,
+  isMissingSessionError
 } from "@tre60/backend";
 import { getPublicSupabaseEnv, getServerSupabaseEnv } from "@tre60/config";
 import { ResetPasswordForm } from "./reset-password-form";
@@ -19,7 +20,7 @@ export default async function ResetPasswordPage() {
     error
   } = await supabase.auth.getUser();
 
-  if (error?.name === "AuthSessionMissingError" || !user) {
+  if (isMissingSessionError(error) || !user) {
     redirect("/auth/error?code=missing_reset_session");
   }
 

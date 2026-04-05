@@ -4,6 +4,7 @@ export * from "./auth/guards";
 export * from "./auth/handoff";
 export * from "./auth/redirects";
 export * from "./auth/security";
+export * from "./auth/session-errors";
 export * from "./auth/types";
 export * from "./db/types";
 export * from "./supabase/admin";

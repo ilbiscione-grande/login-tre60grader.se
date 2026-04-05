@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AuthContext } from "./types";
+import { isMissingSessionError } from "./session-errors";
 import { mapAuthContextRow } from "./types";
 import type { Database } from "../db/types";
 
@@ -14,7 +15,7 @@ export async function getAuthContext(
   } = await supabase.auth.getUser();
 
   if (userError) {
-    if (userError.name === "AuthSessionMissingError") {
+    if (isMissingSessionError(userError)) {
       return null;
     }
 

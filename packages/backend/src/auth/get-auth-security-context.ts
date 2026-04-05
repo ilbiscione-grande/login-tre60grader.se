@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isMissingSessionError } from "./session-errors";
 import type { Database, Tre60AuthSecurityContextRow } from "../db/types";
 
 export type AuthSecurityContext = {
@@ -22,7 +23,7 @@ export async function getAuthSecurityContext(
   } = await supabase.auth.getUser();
 
   if (userError) {
-    if (userError.name === "AuthSessionMissingError") {
+    if (isMissingSessionError(userError)) {
       return null;
     }
 

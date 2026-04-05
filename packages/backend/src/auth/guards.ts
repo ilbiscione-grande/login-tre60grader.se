@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAuthContext } from "./get-auth-context";
+import { isMissingSessionError } from "./session-errors";
 import type { AuthGuardResult } from "./types";
 import type { Database, Tre60Role } from "../db/types";
 
@@ -15,7 +16,7 @@ async function requireRole(
   } = await supabase.auth.getUser();
 
   if (userError) {
-    if (userError.name === "AuthSessionMissingError") {
+    if (isMissingSessionError(userError)) {
       return { ok: false, reason: "no_session" };
     }
 
