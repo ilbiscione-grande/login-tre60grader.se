@@ -68,6 +68,7 @@ export function LoginForm({
     const supabase = createTre60BrowserClient(env);
 
     void supabase.auth.signOut({ scope: "local" });
+    void fetch("/api/auth/clear-session", { method: "POST" });
   }, [authCookieDomain, supabaseAnonKey, supabaseUrl]);
 
   async function handlePasswordSignIn(event: React.FormEvent<HTMLFormElement>) {
