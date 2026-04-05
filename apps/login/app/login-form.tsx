@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createTre60BrowserClient } from "@tre60/backend";
 
@@ -63,6 +63,12 @@ export function LoginForm({
     supabaseAnonKey,
     authCookieDomain
   };
+
+  useEffect(() => {
+    const supabase = createTre60BrowserClient(env);
+
+    void supabase.auth.signOut({ scope: "local" });
+  }, [authCookieDomain, supabaseAnonKey, supabaseUrl]);
 
   async function handlePasswordSignIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
